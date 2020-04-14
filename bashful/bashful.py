@@ -74,7 +74,8 @@ class Bashful:
         parser.add_argument('pipeline', help='Pipeline file')
         args = parser.parse_args(args[1:])
 
-        tags_to_include = ','.join(args.tags or []).split(',')
+        tags_to_include = ','.join(args.tags or []).split(',') if len(args.tags or []) > 0 else []
+
         pipeline_path = args.pipeline
 
         with open(pipeline_path, 'r') as f:
@@ -91,7 +92,7 @@ class Bashful:
             if task.get('tags'):
                 task_tags = task['tags'] if isinstance(task['tags'], list) else [task['tags']]
             skip = True
-            if len(task_tags) == 0:
+            if len(task_tags) == 0 or len(tags_to_include) == 0:
                 skip = False
             else:
                 for task_tag in task_tags:
@@ -105,9 +106,16 @@ class Bashful:
             elif task.get("parallel-tasks"):
                 for subtask in task['parallel-tasks']:
                     if subtask.get('cmd'):
-                        output += output_cmd(
-                            task_name + " :: " + subtask.get("name", "<anonymous>"),
-                            subtask['cmd'])
+                        if subtask.get('for-each'):
+                            for item in subtask['for-each']:
+                                output += output_cmd(
+                                    task_name + " :: " + (subtask.get("name", "<anonymous>").
+                                                          replace('<replace>', item)),
+                                    subtask['cmd'].replace('<replace>', item))
+                        else:
+                            output += output_cmd(
+                                task_name + " :: " + subtask.get("name", "<anonymous>"),
+                                subtask['cmd'])
 
         with open(pipeline_path + ".serial.sh", 'w') as f:
             f.write(output)
