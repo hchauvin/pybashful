@@ -8,6 +8,7 @@ import os
 
 
 class Bashful:
+
     def __init__(self, bashful_serial_mode, force_local_bashful):
         self.bashful_serial_mode = bashful_serial_mode
         self.force_local_bashful = force_local_bashful
@@ -26,7 +27,13 @@ class Bashful:
                 if not self.bashful_path:
                     self._ensure_local_bashful()
         assert self.bashful_path
-        subprocess.run([self.bashful_path] + args, check=True, env={**os.environ, **(extra_env or {})})
+        subprocess.run(
+            [self.bashful_path] + args,
+            check=True,
+            env={
+                **os.environ,
+                **(extra_env or {})
+            })
 
     def _ensure_local_bashful(self):
         os.makedirs(os.path.abspath('third-party'), exist_ok=True)
@@ -35,7 +42,8 @@ class Bashful:
             self._install_bashful()
 
     def _install_bashful(self):
-        subprocess.run(['bash', '-c', """
+        subprocess.run([
+            'bash', '-c', """
         set -eou pipefail
         
         BASHFUL_VERSION=0.1.1
@@ -63,18 +71,20 @@ class Bashful:
         else
             curl -f -L $URL | tar xzp bashful
         fi
-        """], check=True)
+        """
+        ],
+                       check=True)
 
     def _bashful_serial(self, args):
         if args[0] != 'run':
             raise Exception("only 'run' is supported in serial mode")
-        parser = argparse.ArgumentParser(
-            description='Bashful - serial')
+        parser = argparse.ArgumentParser(description='Bashful - serial')
         parser.add_argument('--tags', nargs='*')
         parser.add_argument('pipeline', help='Pipeline file')
         args = parser.parse_args(args[1:])
 
-        tags_to_include = ','.join(args.tags or []).split(',') if len(args.tags or []) > 0 else []
+        tags_to_include = ','.join(
+            args.tags or []).split(',') if len(args.tags or []) > 0 else []
 
         pipeline_path = args.pipeline
 
@@ -90,7 +100,8 @@ class Bashful:
         for task in pipeline['tasks']:
             task_tags = []
             if task.get('tags'):
-                task_tags = task['tags'] if isinstance(task['tags'], list) else [task['tags']]
+                task_tags = task['tags'] if isinstance(
+                    task['tags'], list) else [task['tags']]
             skip = True
             if len(task_tags) == 0 or len(tags_to_include) == 0:
                 skip = False
@@ -109,12 +120,14 @@ class Bashful:
                         if subtask.get('for-each'):
                             for item in subtask['for-each']:
                                 output += output_cmd(
-                                    task_name + " :: " + (subtask.get("name", "<anonymous>").
-                                                          replace('<replace>', item)),
+                                    task_name + " :: " +
+                                    (subtask.get("name", "<anonymous>").replace(
+                                        '<replace>', item)),
                                     subtask['cmd'].replace('<replace>', item))
                         else:
                             output += output_cmd(
-                                task_name + " :: " + subtask.get("name", "<anonymous>"),
+                                task_name + " :: " +
+                                subtask.get("name", "<anonymous>"),
                                 subtask['cmd'])
 
         with open(pipeline_path + ".serial.sh", 'w') as f:
