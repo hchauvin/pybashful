@@ -13,7 +13,7 @@ class Bashful:
         self.force_local_bashful = force_local_bashful
         self.bashful_path = None
 
-    def bashful(self, args, extra_env=None):
+    def run(self, args, extra_env=None):
         if self.bashful_serial_mode:
             self._bashful_serial(args)
             return
