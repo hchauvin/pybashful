@@ -24,7 +24,6 @@ class Bashful:
             else:
                 self.bashful_path = shutil.which("bashful_path")
                 if not self.bashful_path:
-                    print("INFO: bashful is not installed globally")
                     self._ensure_local_bashful()
         assert self.bashful_path
         subprocess.run([self.bashful_path] + args, check=True, env={**os.environ, **(extra_env or {})})
